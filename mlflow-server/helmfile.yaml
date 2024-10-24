@@ -1,0 +1,32 @@
+repositories:
+  - name: cert-manager
+    url: https://charts.jetstack.io
+
+releases:
+  - name: cert-manager
+    namespace: cert-manager
+    createNamespace: true
+    chart: jetstack/cert-manager
+    version: v1.12.0
+    set:
+      - name: installCRDs
+        value: true
+
+  - name: kserve-crd
+    namespace: kserve
+    createNamespace: true
+    chart: oci://ghcr.io/kserve/charts/kserve-crd
+    version: v0.13.0
+
+  - name: kserve
+    needs:
+      - cert-manager/cert-manager
+      - kserve-crd
+    namespace: kserve
+    chart: oci://ghcr.io/kserve/charts/kserve
+    version: v0.13.0
+
+  - name: mlflow
+    namespace: mlflow
+    chart: oci://registry-1.docker.io/bitnamicharts/mlflow
+    version: 2.0.2
