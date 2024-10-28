@@ -1,0 +1,10 @@
+POST http://localhost:8081/v2/models/mlflow-wine-classifier/infer
+Content-Type: application/json
+Host: mlflow-wine-classifier.mlflow.svc.cluster.local
+
+{
+  "dataframe_split": {
+    "columns": ["fixed acidity","volatile acidity","citric acid","residual sugar","chlorides","free sulfur dioxide","total sulfur dioxide","density","pH","sulphates","alcohol"],
+    "data": [[7,0.27,0.36,20.7,0.045,45,170,1.001,3,0.45,8.8]]
+  }
+}

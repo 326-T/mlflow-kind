@@ -12,6 +12,7 @@ releases:
       - name: installCRDs
         value: true
 
+  # https://kserve.github.io/website/master/get_started/#install-the-kserve-quickstart-environment #
   - name: kserve-crd
     namespace: kserve
     createNamespace: true
@@ -30,3 +31,60 @@ releases:
     namespace: mlflow
     chart: oci://registry-1.docker.io/bitnamicharts/mlflow
     version: 2.0.2
+
+hooks:
+  - events: ["prepare"]
+    command: "kubectl"
+    args: ["create", "namespace", "knative-serving"]
+
+  - events: ["prepare"]
+    command: "kubectl"
+    args:
+      [
+        "apply",
+        "-f",
+        "https://github.com/knative/serving/releases/download/knative-v1.16.0/serving-crds.yaml",
+      ]
+
+  - events: ["prepare"]
+    command: "kubectl"
+    args:
+      [
+        "apply",
+        "-f",
+        "https://github.com/knative/serving/releases/download/knative-v1.16.0/serving-core.yaml",
+        "-n",
+        "knative-serving",
+      ]
+
+  - events: ["prepare"]
+    command: "istioctl"
+    args: ["install", "-y"]
+
+  - events: ["prepare"]
+    command: "kubectl"
+    args:
+      [
+        "apply",
+        "-f",
+        "https://github.com/knative/net-istio/releases/download/knative-v1.16.0/net-istio.yaml",
+      ]
+
+  - events: ["prepare"]
+    command: "kubectl"
+    args:
+      [
+        "apply",
+        "-f",
+        "https://github.com/knative/serving/releases/download/knative-v1.16.0/serving-default-domain.yaml",
+      ]
+
+  - events: ["postsync"]
+    command: "kubectl"
+    args:
+      [
+        "kubectl",
+        "apply",
+        "-f",
+        "https://github.com/kserve/kserve/releases/download/v0.13.0/kserve-cluster-resources.yaml",
+      ]

@@ -1,0 +1,37 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: s3-inference-secret
+  namespace: mlflow
+  annotations:
+    serving.kserve.io/s3-endpoint: mlflow-minio
+    serving.kserve.io/s3-usehttps: "0"
+    serving.kserve.io/s3-region: "us-east-2"
+    serving.kserve.io/s3-useanoncredential: "true"
+type: Opaque
+stringData: # use `stringData` for raw credential string or `data` for base64 encoded string
+  AWS_ACCESS_KEY_ID: YWRtaW4=
+  AWS_SECRET_ACCESS_KEY: N0Q2RnluekpRcg==
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: s3-inference-sa
+  namespace: mlflow
+secrets:
+  - name: s3-inference-secret
+---
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: mlflow-wine-classifier
+  namespace: mlflow
+spec:
+  predictor:
+    serviceAccountName: s3-inference-sa
+    model:
+      modelFormat:
+        name: mlflow
+      protocolVersion: v2
+      storageUri: s3://mlflow/1/1bb1168ad7ed4126be18e1d5a263663b/artifacts/model
