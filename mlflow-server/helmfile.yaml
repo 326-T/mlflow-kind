@@ -1,8 +1,15 @@
 repositories:
   - name: cert-manager
     url: https://charts.jetstack.io
+  - name: metallb
+    url: https://metallb.github.io/metallb
 
 releases:
+  - name: metallb
+    namespace: metallb-system
+    createNamespace: true
+    chart: metallb/metallb
+
   - name: cert-manager
     namespace: cert-manager
     createNamespace: true
@@ -34,57 +41,35 @@ releases:
 
 hooks:
   - events: ["prepare"]
-    command: "kubectl"
-    args: ["create", "namespace", "knative-serving"]
-
-  - events: ["prepare"]
-    command: "kubectl"
+    command: "bash"
     args:
-      [
-        "apply",
-        "-f",
-        "https://github.com/knative/serving/releases/download/knative-v1.16.0/serving-crds.yaml",
-      ]
+      - "-c"
+      - |
+        kubectl get configmap kube-proxy -n kube-system -o yaml \
+        | sed -e "s/strictARP: false/strictARP: true/" \
+        | kubectl apply -f - -n kube-system
 
   - events: ["prepare"]
-    command: "kubectl"
+    command: "bash"
     args:
-      [
-        "apply",
-        "-f",
-        "https://github.com/knative/serving/releases/download/knative-v1.16.0/serving-core.yaml",
-        "-n",
-        "knative-serving",
-      ]
-
-  - events: ["prepare"]
-    command: "istioctl"
-    args: ["install", "-y"]
-
-  - events: ["prepare"]
-    command: "kubectl"
-    args:
-      [
-        "apply",
-        "-f",
-        "https://github.com/knative/net-istio/releases/download/knative-v1.16.0/net-istio.yaml",
-      ]
-
-  - events: ["prepare"]
-    command: "kubectl"
-    args:
-      [
-        "apply",
-        "-f",
-        "https://github.com/knative/serving/releases/download/knative-v1.16.0/serving-default-domain.yaml",
-      ]
+      - "-c"
+      - |
+        kubectl apply -f ./namespace.yaml
+        kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.16.0/serving-crds.yaml;
+        kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.16.0/serving-core.yaml -n knative-serving;
+        istioctl install -y;
+        kubectl apply -f https://github.com/knative/net-istio/releases/download/knative-v1.16.0/net-istio.yaml;
+        kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.16.0/serving-default-domain.yaml;
 
   - events: ["postsync"]
     command: "kubectl"
     args:
       [
-        "kubectl",
         "apply",
         "-f",
         "https://github.com/kserve/kserve/releases/download/v0.13.0/kserve-cluster-resources.yaml",
       ]
+
+  - events: ["postsync"]
+    command: "kubectl"
+    args: ["apply", "-f", "./metallb-configmap.yaml"]
