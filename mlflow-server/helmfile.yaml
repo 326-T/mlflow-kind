@@ -15,9 +15,8 @@ releases:
     createNamespace: true
     chart: jetstack/cert-manager
     version: v1.12.0
-    set:
-      - name: installCRDs
-        value: true
+    values:
+      - installCRDs: true
 
   # https://kserve.github.io/website/master/get_started/#install-the-kserve-quickstart-environment #
   - name: kserve-crd
@@ -38,6 +37,10 @@ releases:
     namespace: mlflow
     chart: oci://registry-1.docker.io/bitnamicharts/mlflow
     version: 2.0.2
+    values:
+      - tracking.auth.password: "password"
+      - minio.auth.rootPassword: "password"
+      - postgresql.auth.password: "password"
 
 hooks:
   - events: ["prepare"]
@@ -81,14 +84,8 @@ hooks:
 
   - events: ["postsync"]
     command: "kubectl"
-    args:
-      [
-        "rollout",
-        "restart",
-        "deployment",
-        "coredns",
-        "-n",
-        "kube-system"
-      ]
-    command: "kubectl"
     args: ["apply", "-f", "./metallb-configmap.yaml"]
+
+  - events: ["postsync"]
+    command: "kubectl"
+    args: ["rollout", "restart", "deployment", "coredns", "-n", "kube-system"]

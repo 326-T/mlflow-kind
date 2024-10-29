@@ -41,7 +41,7 @@ $ pip install -r requirements.txt
 $ export KUBE_MLFLOW_TRACKING_URI=http://mlflow-tracking.mlflow.svc.cluster.local
 $ export MLFLOW_TRACKING_URI=http://localhost:8080
 $ export MLFLOW_TRACKING_USERNAME=user
-$ export MLFLOW_TRACKING_PASSWORD=P7Gd9QyfKG
+$ export MLFLOW_TRACKING_PASSWORD=cGFzc3dvcmQK
 ```
 
 学習の実行
@@ -59,15 +59,6 @@ $ mlflow run https://github.com/326-T/mlflow-project-sample.git \
 ### パラメータの修正
 
 [./kserve/inference_service.yaml](./kserve/inference_service.yaml)を修正する.
-
-1. モデルのパスを修正
-1. AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY を設定
-
-AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY は以下で確認する.
-
-```bash
-$ kubectl get secret -n mlflow mlflow-minio -o yaml
-```
 
 ```bash
 $ cd kserve
