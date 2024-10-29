@@ -1,15 +1,8 @@
 repositories:
   - name: cert-manager
     url: https://charts.jetstack.io
-  - name: metallb
-    url: https://metallb.github.io/metallb
 
 releases:
-  - name: metallb
-    namespace: metallb-system
-    createNamespace: true
-    chart: metallb/metallb
-
   - name: cert-manager
     namespace: cert-manager
     createNamespace: true
@@ -54,7 +47,6 @@ hooks:
     args:
       - "-c"
       - |
-        kubectl apply -f ./namespace.yaml
         kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.16.0/serving-crds.yaml;
         kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.16.0/serving-core.yaml -n knative-serving;
         istioctl install -y;
@@ -71,5 +63,10 @@ hooks:
       ]
 
   - events: ["postsync"]
-    command: "kubectl"
-    args: ["apply", "-f", "./metallb-configmap.yaml"]
+    command: "bash"
+    args:
+      - "-c"
+      - |
+        kubectl get svc istio-ingressgateway -n istio-system -o yaml \
+        | sed -e "s/type: LoadBalancer/type: NodePort/" \
+        | kubectl apply -f - -n kube-system
