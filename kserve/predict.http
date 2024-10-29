@@ -1,4 +1,4 @@
-POST http://mlflow-wine-classifier.mlflow.svc.cluster.local/v2/models/mlflow-wine-classifier/infer
+POST http://localhost:8081/v2/models/mlflow-wine-classifier/infer
 Content-Type: application/json
 Host: mlflow-wine-classifier.mlflow.svc.cluster.local
 

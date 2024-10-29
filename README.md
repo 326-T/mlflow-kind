@@ -74,6 +74,10 @@ $ cd kserve
 $ kubectl apply -f inference_service.yaml
 ```
 
+```bash
+$ kubectl port-forward -n istio-system svc/knative-local-gateway 8081:80
+```
+
 [./kserve/predict.http](./kserve/predict.http)で推論を行う.
 
 ## CRDs
