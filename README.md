@@ -14,7 +14,7 @@ $ helmfile apply
 ポートフォワード
 
 ```bash
-$ kubectl port-forward svc/mlflow-tracking 5000:80 -n mlflow
+$ kubectl port-forward svc/mlflow-tracking 8080:80 -n mlflow
 ```
 
 トラッキングサーバのアカウント確認
@@ -38,10 +38,10 @@ $ pip install -r requirements.txt
 接続情報の設定
 
 ```bash
-$ export KUBE_MLFLOW_TRACKING_URI=http://tracking-server.mlflow.svc.cluster.local
+$ export KUBE_MLFLOW_TRACKING_URI=http://mlflow-tracking.mlflow.svc.cluster.local
 $ export MLFLOW_TRACKING_URI=http://localhost:8080
 $ export MLFLOW_TRACKING_USERNAME=user
-$ export MLFLOW_TRACKING_PASSWORD=zJJwlMdMZb
+$ export MLFLOW_TRACKING_PASSWORD=P7Gd9QyfKG
 ```
 
 学習の実行

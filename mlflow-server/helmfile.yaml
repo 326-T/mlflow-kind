@@ -1,5 +1,5 @@
 repositories:
-  - name: cert-manager
+  - name: jetstack
     url: https://charts.jetstack.io
 
 releases:
@@ -70,3 +70,15 @@ hooks:
         kubectl get svc istio-ingressgateway -n istio-system -o yaml \
         | sed -e "s/type: LoadBalancer/type: NodePort/" \
         | kubectl apply -f - -n kube-system
+
+  - events: ["postsync"]
+    command: "kubectl"
+    args:
+      [
+        "rollout",
+        "restart",
+        "deployment",
+        "coredns",
+        "-n",
+        "kube-system"
+      ]
