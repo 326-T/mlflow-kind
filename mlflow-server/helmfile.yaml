@@ -57,7 +57,6 @@ hooks:
     args:
       - "-c"
       - |
-        kubectl apply -f ./namespace.yaml
         kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.16.0/serving-crds.yaml;
         kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.16.0/serving-core.yaml -n knative-serving;
         istioctl install -y;
@@ -74,17 +73,8 @@ hooks:
       ]
 
   - events: ["postsync"]
-    command: "bash"
-    args:
-      - "-c"
-      - |
-        kubectl get svc istio-ingressgateway -n istio-system -o yaml \
-        | sed -e "s/type: LoadBalancer/type: NodePort/" \
-        | kubectl apply -f - -n kube-system
-
-  - events: ["postsync"]
     command: "kubectl"
-    args: ["apply", "-f", "./metallb-configmap.yaml"]
+    args: ["apply", "-f", "./metallb-config.yaml"]
 
   - events: ["postsync"]
     command: "kubectl"
