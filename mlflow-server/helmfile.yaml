@@ -9,73 +9,83 @@ releases:
     namespace: metallb-system
     createNamespace: true
     chart: metallb/metallb
+    hooks:
+      - events: [postsync]
+        command: bash
+        args:
+          - -c
+          - |
+            kubectl apply -f ./metallb-config.yaml;
+            kubectl rollout restart deployment coredns -n kube-system;
 
   - name: cert-manager
     namespace: cert-manager
     createNamespace: true
     chart: jetstack/cert-manager
-    version: v1.12.0
+    version: v1.16.1
     values:
       - installCRDs: true
 
-  # https://kserve.github.io/website/master/get_started/#install-the-kserve-quickstart-environment #
+  # https://kserve.github.io/website/master/get_started/#install-the-kserve-quickstart-environment
   - name: kserve-crd
     namespace: kserve
     createNamespace: true
     chart: oci://ghcr.io/kserve/charts/kserve-crd
-    version: v0.13.0
+    version: v0.14.0
 
   - name: kserve
-    needs:
-      - cert-manager/cert-manager
-      - kserve-crd
+    needs: [cert-manager/cert-manager, kserve-crd]
     namespace: kserve
     chart: oci://ghcr.io/kserve/charts/kserve
-    version: v0.13.0
+    version: v0.14.0
+    hooks:
+      - events: [postsync]
+        command: bash
+        args:
+          - -c
+          - |
+            kubectl apply -f https://github.com/kserve/kserve/releases/download/v0.13.0/kserve-cluster-resources.yaml;
+            kubectl rollout restart deployment coredns -n kube-system;
 
   - name: mlflow
     namespace: mlflow
     chart: oci://registry-1.docker.io/bitnamicharts/mlflow
-    version: 2.0.2
+    version: 2.0.3
     values:
-      - tracking.auth.password: "password"
-      - minio.auth.rootPassword: "password"
-      - postgresql.auth.password: "password"
+      - tracking:
+          auth:
+            password: password
+        minio:
+          auth:
+            rootPassword: password
+        postgresql:
+          auth:
+            password: password
+    hooks:
+      - events: [postsync]
+        command: bash
+        args:
+          - -c
+          - |
+            kubectl rollout restart deployment coredns -n kube-system;
 
 hooks:
-  - events: ["prepare"]
-    command: "bash"
+  - events: [prepare]
+    command: bash
     args:
-      - "-c"
+      - -c
       - |
         kubectl get configmap kube-proxy -n kube-system -o yaml \
         | sed -e "s/strictARP: false/strictARP: true/" \
         | kubectl apply -f - -n kube-system
 
-  - events: ["prepare"]
-    command: "bash"
+  - events: [prepare]
+    command: bash
     args:
-      - "-c"
+      - -c
       - |
         kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.16.0/serving-crds.yaml;
         kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.16.0/serving-core.yaml -n knative-serving;
         istioctl install -y;
         kubectl apply -f https://github.com/knative/net-istio/releases/download/knative-v1.16.0/net-istio.yaml;
         kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.16.0/serving-default-domain.yaml;
-
-  - events: ["postsync"]
-    command: "kubectl"
-    args:
-      [
-        "apply",
-        "-f",
-        "https://github.com/kserve/kserve/releases/download/v0.13.0/kserve-cluster-resources.yaml",
-      ]
-
-  - events: ["postsync"]
-    command: "kubectl"
-    args: ["apply", "-f", "./metallb-config.yaml"]
-
-  - events: ["postsync"]
-    command: "kubectl"
-    args: ["rollout", "restart", "deployment", "coredns", "-n", "kube-system"]

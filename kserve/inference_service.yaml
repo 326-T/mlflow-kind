@@ -12,7 +12,7 @@ metadata:
 type: Opaque
 stringData: # use `stringData` for raw credential string or `data` for base64 encoded string
   AWS_ACCESS_KEY_ID: YWRtaW4=
-  AWS_SECRET_ACCESS_KEY: cGFzc3dvcmQK
+  AWS_SECRET_ACCESS_KEY: cGFzc3dvcmQK=
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -34,4 +34,4 @@ spec:
       modelFormat:
         name: mlflow
       protocolVersion: v2
-      storageUri: s3://mlflow/1/1bb1168ad7ed4126be18e1d5a263663b/artifacts/model
+      storageUri: s3://mlflow/1/83fc08e9271b4b33ac60069f3975e976/artifacts/model/
