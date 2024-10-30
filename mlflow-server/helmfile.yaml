@@ -50,7 +50,7 @@ releases:
   - name: mlflow
     namespace: mlflow
     chart: oci://registry-1.docker.io/bitnamicharts/mlflow
-    version: 1.0.0
+    version: 2.0.3
     values:
       - tracking:
           auth:
