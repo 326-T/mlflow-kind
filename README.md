@@ -41,7 +41,7 @@ $ pip install -r requirements.txt
 $ export KUBE_MLFLOW_TRACKING_URI=http://mlflow-tracking.mlflow.svc.cluster.local
 $ export MLFLOW_TRACKING_URI=http://localhost:8080
 $ export MLFLOW_TRACKING_USERNAME=user
-$ export MLFLOW_TRACKING_PASSWORD=cGFzc3dvcmQK
+$ export MLFLOW_TRACKING_PASSWORD=cGFzc3dvcmQK=
 ```
 
 学習の実行

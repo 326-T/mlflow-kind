@@ -12,7 +12,7 @@ metadata:
 type: Opaque
 stringData: # use `stringData` for raw credential string or `data` for base64 encoded string
   AWS_ACCESS_KEY_ID: YWRtaW4=
-  AWS_SECRET_ACCESS_KEY: cGFzc3dvcmQK
+  AWS_SECRET_ACCESS_KEY: cGFzc3dvcmQK=
 ---
 apiVersion: v1
 kind: ServiceAccount
