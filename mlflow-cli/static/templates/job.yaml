@@ -2,19 +2,16 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: "{replaced with MLflow Project name}"
-  namespace: mlflow
+  namespace: "{replaced with namespace}"
 spec:
   ttlSecondsAfterFinished: 100
   backoffLimit: 0
   template:
     spec:
       containers:
-        - name: "{replaced with MLflow Project name}"
+        - name: mlflow-project-runner
           image: "{replaced with URI of Docker image created during Project execution}"
-          command: ["{replaced with MLflow Project entry point command}"]
           env:
-            - name: MLFLOW_TRACKING_URI
-              value: http://mlflow-tracking
             - name: MLFLOW_TRACKING_USERNAME
               valueFrom:
                 secretKeyRef:
@@ -27,7 +24,9 @@ spec:
                   key: admin-password
           resources:
             limits:
-              memory: 1Gi
+              cpu: 8
+              memory: 8Gi
             requests:
-              memory: 256Mi
+              cpu: 2
+              memory: 2Gi
       restartPolicy: Never

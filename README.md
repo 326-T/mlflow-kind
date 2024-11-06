@@ -47,8 +47,8 @@ $ export MLFLOW_TRACKING_PASSWORD=password
 学習の実行
 
 ```bash
-$ mlflow run https://github.com/326-T/mlflow-project-sample.git \
-  --experiment-name wine_quality \
+$ mlflow run https://github.com/326-T/mlflow-project-sample#projects/wine-quality \
+  --experiment-name wine-quality \
   --backend kubernetes \
   --backend-config .kube/kubernetes_config.json \
   -P alpha=0.5
