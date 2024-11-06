@@ -1,4 +1,4 @@
-import kubernetes
+from kubernetes import client, config
 import yaml
 from typing import Any
 from mlflow import tracking
@@ -14,14 +14,20 @@ from mlflow.environment_variables import (
     MLFLOW_EXPERIMENT_ID,
     MLFLOW_RUN_ID,
     MLFLOW_TRACKING_URI,
+    MLFLOW_S3_ENDPOINT_URL,
+    _EnvironmentVariable
 )
 
+config.load_kube_config()
+KUBE_MLFLOW_TRACKING_URI = _EnvironmentVariable("KUBE_MLFLOW_TRACKING_URI", str, None)
+AWS_ACCESS_KEY_ID = _EnvironmentVariable("AWS_ACCESS_KEY_ID", str, None)
+AWS_SECRET_ACCESS_KEY = _EnvironmentVariable("AWS_SECRET_ACCESS_KEY", str, None)
 
 def fine_tune(
     image: str,
     experiment_id: str,
     run_name: str,
-    namespace: str,
+    namespace: str ="mlflow",
 ) -> KubernetesSubmittedRun:
     active_run: Run = tracking.MlflowClient().create_run(
         experiment_id=experiment_id,
@@ -39,13 +45,13 @@ def fine_tune(
     job_template["metadata"]["namespace"] = namespace
     job_template["spec"]["template"]["spec"]["containers"][0]["image"] = image
     job_template["spec"]["template"]["spec"]["containers"][0]["env"] += [
-        {MLFLOW_TRACKING_URI.name: tracking.get_tracking_uri()},
-        {MLFLOW_EXPERIMENT_ID.name: experiment_id},
-        {MLFLOW_RUN_ID.name: active_run.info.run_id},
+        {"name": MLFLOW_TRACKING_URI.name, "value": KUBE_MLFLOW_TRACKING_URI.get()},
+        {"name": MLFLOW_EXPERIMENT_ID.name, "value": active_run.info.experiment_id},
+        {"name": MLFLOW_RUN_ID.name, "value": active_run.info.run_id},
     ]
-    api_instance = kubernetes.client.BatchV1Api()
+    api_instance = client.BatchV1Api()
     api_instance.create_namespaced_job(
-        namespace=namespace,
+        namespace=job_template["metadata"]["namespace"],
         body=job_template,
         pretty=True,
     )
@@ -68,7 +74,7 @@ def deploy(
     inference_service_template["metadata"]["name"] = name
     inference_service_template["metadata"]["namespace"] = namespace
     inference_service_template["spec"]["predictor"]["model"]["storageUri"] = storage_uri
-    api_instance = kubernetes.client.CustomObjectsApi()
+    api_instance = client.CustomObjectsApi()
     api_instance.create_namespaced_custom_object(
         group="serving.kserve.io",
         version="v1beta1",
@@ -82,7 +88,7 @@ def destroy(
     name: str,
     namespace: str,
 ) -> None:
-    api_instance = kubernetes.client.CustomObjectsApi()
+    api_instance = client.CustomObjectsApi()
     api_instance.delete_namespaced_custom_object(
         group="serving.kserve.io",
         version="v1beta1",
