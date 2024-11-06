@@ -24,7 +24,9 @@ spec:
                   key: admin-password
           resources:
             limits:
-              memory: 1Gi
+              cpu: 8
+              memory: 8Gi
             requests:
-              memory: 256Mi
+              cpu: 2
+              memory: 2Gi
       restartPolicy: Never

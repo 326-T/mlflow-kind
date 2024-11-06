@@ -3,6 +3,8 @@ repositories:
     url: https://charts.jetstack.io
   - name: metallb
     url: https://metallb.github.io/metallb
+  - name: metrics-server
+    url: https://kubernetes-sigs.github.io/metrics-server/
 
 releases:
   - name: metallb
@@ -17,6 +19,15 @@ releases:
           - |
             kubectl apply -f ./metallb-config.yaml;
             kubectl rollout restart deployment coredns -n kube-system;
+
+  - name: metrics-server
+    namespace: metrics
+    createNamespace: true
+    chart: metrics-server/metrics-server
+    values:
+      - args:
+          - --kubelet-insecure-tls
+          - --kubelet-preferred-address-types=InternalIP
 
   - name: cert-manager
     namespace: cert-manager
@@ -55,6 +66,14 @@ releases:
       - tracking:
           auth:
             password: password
+          extraEnvVars:
+            - name: MLFLOW_HTTP_REQUEST_TIMEOUT
+              value: "600"
+          resources:
+            requests:
+              ephemeral-storage: 2Gi
+            limits:
+              ephemeral-storage: 10Gi  
         minio:
           auth:
             rootPassword: password
