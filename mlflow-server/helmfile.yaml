@@ -69,6 +69,8 @@ releases:
           extraEnvVars:
             - name: MLFLOW_HTTP_REQUEST_TIMEOUT
               value: "600"
+          extraArgs:
+            - --gunicorn-opts=--timeout 600
           resources:
             requests:
               ephemeral-storage: 2Gi
