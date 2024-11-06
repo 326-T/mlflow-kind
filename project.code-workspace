@@ -1,0 +1,7 @@
+{
+  "folders": [
+    { "path": "mlflow-cli" },
+    { "path": "mlflow-server" },
+    { "path": "kserve" }
+  ]
+}
