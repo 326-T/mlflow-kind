@@ -14,8 +14,7 @@ from mlflow.environment_variables import (
     MLFLOW_EXPERIMENT_ID,
     MLFLOW_RUN_ID,
     MLFLOW_TRACKING_URI,
-    MLFLOW_S3_ENDPOINT_URL,
-    _EnvironmentVariable
+    _EnvironmentVariable,
 )
 
 config.load_kube_config()
@@ -23,11 +22,12 @@ KUBE_MLFLOW_TRACKING_URI = _EnvironmentVariable("KUBE_MLFLOW_TRACKING_URI", str,
 AWS_ACCESS_KEY_ID = _EnvironmentVariable("AWS_ACCESS_KEY_ID", str, None)
 AWS_SECRET_ACCESS_KEY = _EnvironmentVariable("AWS_SECRET_ACCESS_KEY", str, None)
 
+
 def fine_tune(
     image: str,
     experiment_id: str,
     run_name: str,
-    namespace: str ="mlflow",
+    namespace: str = "mlflow",
 ) -> KubernetesSubmittedRun:
     active_run: Run = tracking.MlflowClient().create_run(
         experiment_id=experiment_id,

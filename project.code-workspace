@@ -1,7 +1,15 @@
 {
   "folders": [
+    { "path": "." },
     { "path": "mlflow-cli" },
     { "path": "mlflow-server" },
     { "path": "kserve" }
-  ]
+  ],
+  "settings": {
+    "files.exclude": {
+      "kserve": true,
+      "mlflow-cli": true,
+      "mlflow-server": true
+    }
+  }
 }
