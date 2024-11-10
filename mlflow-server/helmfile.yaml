@@ -75,7 +75,7 @@ releases:
             requests:
               ephemeral-storage: 2Gi
             limits:
-              ephemeral-storage: 10Gi  
+              ephemeral-storage: 10Gi
         minio:
           auth:
             rootPassword: password
@@ -88,6 +88,7 @@ releases:
         args:
           - -c
           - |
+            kubectl apply -f ./mlflow-secret.yaml;
             kubectl rollout restart deployment coredns -n kube-system;
 
 hooks:

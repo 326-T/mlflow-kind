@@ -1,20 +1,25 @@
-from kubernetes import client, config
-import yaml
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+
 from typing import Any
+
+import yaml
+from kubernetes import client, config
 from mlflow import tracking
-from mlflow.entities.run import Run
+from mlflow.entities.run import Run, RunInfo
+from mlflow.environment_variables import (
+    MLFLOW_EXPERIMENT_ID,
+    MLFLOW_RUN_ID,
+    MLFLOW_TRACKING_URI,
+    _EnvironmentVariable,
+)
 from mlflow.projects.kubernetes import KubernetesSubmittedRun
 from mlflow.utils.mlflow_tags import (
     MLFLOW_DOCKER_IMAGE_ID,
     MLFLOW_PROJECT_BACKEND,
     MLFLOW_PROJECT_ENV,
     MLFLOW_RUN_NAME,
-)
-from mlflow.environment_variables import (
-    MLFLOW_EXPERIMENT_ID,
-    MLFLOW_RUN_ID,
-    MLFLOW_TRACKING_URI,
-    _EnvironmentVariable,
 )
 
 config.load_kube_config()
@@ -27,67 +32,130 @@ def fine_tune(
     image: str,
     experiment_id: str,
     run_name: str,
-    namespace: str = "mlflow",
+    namespace: str,
+    dry_run: bool = False,
 ) -> KubernetesSubmittedRun:
-    active_run: Run = tracking.MlflowClient().create_run(
-        experiment_id=experiment_id,
-        run_name=run_name,
-        tags={
-            MLFLOW_PROJECT_BACKEND: "kubernetes",
-            MLFLOW_PROJECT_ENV: "docker",
-            MLFLOW_RUN_NAME: run_name,
-            MLFLOW_DOCKER_IMAGE_ID: image,
-        },
+    """
+    Run a job on Kubernetes.
+
+    Args:
+        image (str): Container image to run the job.
+        experiment_id (str): mlflow experiment id.
+        run_name (str): mlflow run name.
+        namespace (str, optional): Kubernetes namespace to run the job.
+
+    Returns:
+        KubernetesSubmittedRun: _description_
+    """
+
+    active_run: Run = (
+        tracking.MlflowClient().create_run(
+            experiment_id=experiment_id,
+            run_name=run_name,
+            tags={
+                MLFLOW_PROJECT_BACKEND: "kubernetes",
+                MLFLOW_PROJECT_ENV: "docker",
+                MLFLOW_RUN_NAME: run_name,
+                MLFLOW_DOCKER_IMAGE_ID: image,
+            },
+        )
+        if not dry_run
+        else Run(
+            run_data=None,
+            run_info=RunInfo(
+                run_uuid="run_uuid",
+                user_id="user_id",
+                status="status",
+                start_time="start_time",
+                end_time="end_time",
+                lifecycle_stage="lifecycle_stage",
+                experiment_id=experiment_id,
+                run_name=run_name,
+                run_id="dry_run",
+            ),
+        )
     )
-    with open(file="./static/templates/job.yaml") as job_template:
-        job_template: Any = yaml.safe_load(stream=job_template)
-    job_template["metadata"]["name"] = active_run.info.run_name
-    job_template["metadata"]["namespace"] = namespace
-    job_template["spec"]["template"]["spec"]["containers"][0]["image"] = image
-    job_template["spec"]["template"]["spec"]["containers"][0]["env"] += [
+
+    with open(file="./static/templates/job.yaml") as template:
+        manifest: Any = yaml.safe_load(stream=template)
+    manifest["metadata"]["name"] = active_run.info.run_name
+    manifest["metadata"]["namespace"] = namespace
+    manifest["spec"]["template"]["spec"]["containers"][0]["image"] = image
+    manifest["spec"]["template"]["spec"]["containers"][0]["env"] += [
         {"name": MLFLOW_TRACKING_URI.name, "value": KUBE_MLFLOW_TRACKING_URI.get()},
         {"name": MLFLOW_EXPERIMENT_ID.name, "value": active_run.info.experiment_id},
         {"name": MLFLOW_RUN_ID.name, "value": active_run.info.run_id},
     ]
+    logging.info(f"Creating job {active_run.info.run_name} in namespace {namespace}")
     api_instance = client.BatchV1Api()
     api_instance.create_namespaced_job(
-        namespace=job_template["metadata"]["namespace"],
-        body=job_template,
+        namespace=manifest["metadata"]["namespace"],
+        body=manifest,
         pretty=True,
+        dry_run="All" if dry_run else None,
     )
     return KubernetesSubmittedRun(
         mlflow_run_id=active_run.info.run_id,
-        job_name=job_template["metadata"]["name"],
-        job_namespace=job_template["metadata"]["namespace"],
+        job_name=manifest["metadata"]["name"],
+        job_namespace=manifest["metadata"]["namespace"],
     )
 
 
 def deploy(
     name: str,
+    experiment_id: str,
+    run_id: str,
+    model_name: str,
     namespace: str,
     storage_uri: str,
+    dry_run: bool = False,
 ) -> None:
-    with open(file="./static/templates/job.yaml") as inference_service_template:
-        inference_service_template: Any = yaml.safe_load(
-            stream=inference_service_template
-        )
-    inference_service_template["metadata"]["name"] = name
-    inference_service_template["metadata"]["namespace"] = namespace
-    inference_service_template["spec"]["predictor"]["model"]["storageUri"] = storage_uri
+    """
+    Deploy a model as a kserve inference service.
+
+    Args:
+        name (str): name of the inference service.
+        experiment_id (str): mlflow experiment id.
+        run_id (str): mlflow run id.
+        model_name (str): mlflow model name.
+        namespace (str): Kubernetes namespace to deploy the service.
+        storage_uri (str): S3 URI to the model artifacts.
+    """
+    with open(file="./static/templates/inference_service.yaml", mode="r") as template:
+        manifest: Any = yaml.safe_load(stream=template)
+    manifest["metadata"]["name"] = name
+    manifest["metadata"]["namespace"] = namespace
+
+    for env_var in manifest["spec"]["predictor"]["containers"][0]["env"]:
+        if env_var["name"] == "STORAGE_URI":
+            env_var["value"] = (
+                f"s3://{storage_uri}/{experiment_id}/{run_id}/artifacts/{model_name}"
+            )
+        if env_var["name"] == "APP_ARGS":
+            env_var["value"] = f"--model_name {model_name} --predictor_protocol v2"
+
     api_instance = client.CustomObjectsApi()
     api_instance.create_namespaced_custom_object(
         group="serving.kserve.io",
         version="v1beta1",
         namespace=namespace,
         plural="inferenceservices",
-        body=inference_service_template,
+        body=manifest,
+        dry_run="All" if dry_run else None,
     )
 
 
 def destroy(
     name: str,
-    namespace: str,
+    namespace: str = "mlflow",
 ) -> None:
+    """
+    Destroy a kserve inference service.
+
+    Args:
+        name (str): name of the inference service.
+        namespace (str): Kubernetes namespace to destroy the service.
+    """
     api_instance = client.CustomObjectsApi()
     api_instance.delete_namespaced_custom_object(
         group="serving.kserve.io",
