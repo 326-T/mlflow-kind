@@ -47,22 +47,24 @@ $ export MLFLOW_TRACKING_PASSWORD=password
 学習の実行
 
 ```bash
-$ mlflow run https://github.com/326-T/mlflow-project-sample#projects/wine-quality \
-  --experiment-name wine-quality \
-  --backend kubernetes \
-  --backend-config .kube/kubernetes_config.json \
-  -P alpha=0.5
+$ python scripts/cli.py \
+  fine-tune \
+  326takeda/mlflow-project_multilingual-e5-large:latest \
+  430758536676277373 \
+  sample-run
 ```
 
 ## KServe へのデプロイ
 
 ### パラメータの修正
 
-[./kserve/inference_service.yaml](./kserve/inference_service.yaml)を修正する.
-
 ```bash
-$ cd kserve
-$ kubectl apply -f inference_service.yaml
+$ python scripts/cli.py \
+  deploy \
+  sample-inference-service \
+  430758536676277373 \
+  c3dce6c6bcc245c2b7dd37924bb958e0 \
+  multilingual-e5-large
 ```
 
 ```bash
