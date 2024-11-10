@@ -25,13 +25,16 @@ secrets:
 apiVersion: serving.kserve.io/v1beta1
 kind: InferenceService
 metadata:
-  name: mlflow-wine-classifier
+  name: multilingual-e5-large
   namespace: mlflow
 spec:
   predictor:
     serviceAccountName: s3-inference-sa
-    model:
-      modelFormat:
-        name: mlflow
-      protocolVersion: v2
-      storageUri: s3://mlflow/1/83fc08e9271b4b33ac60069f3975e976/artifacts/model/
+    containers:
+      - name: kserve-container
+        image: 326takeda/kserve-sentence-transformer:latest
+        env:
+          - name: STORAGE_URI
+            value: s3://mlflow/3/c3dce6c6bcc245c2b7dd37924bb958e0/artifacts/multilingual-e5-large
+          - name: APP_ARGS
+            value: "--model_name multilingual-e5-large --predictor_protocol v2"
