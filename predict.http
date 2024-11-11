@@ -17,7 +17,7 @@ Host: mlflow-wine-classifier.mlflow.svc.cluster.local
 ### REST v2
 POST http://localhost:8081/v2/models/multilingual-e5-large/infer
 Content-Type: application/json
-Host: multilingual-e5-large.mlflow.svc.cluster.local
+Host: sample-inference-service.mlflow.svc.cluster.local
 
 {
   "inputs": [
@@ -40,7 +40,7 @@ Host: multilingual-e5-large.mlflow.svc.cluster.local
 
 POST http://localhost:8081/v1/models/multilingual-e5-large:predict
 Content-Type: application/json
-Host: multilingual-e5-large.mlflow.svc.cluster.local
+Host: sample-inference-service.mlflow.svc.cluster.local
 
 {
   "instances": [
