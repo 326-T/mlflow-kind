@@ -6,7 +6,7 @@ $ kind create cluster --name mlflow-poc
 
 ```bash
 $ cd mlflow-server
-$ helmfile apply
+$ helmfile sync
 ```
 
 ## トラッキングサーバへのアクセス
@@ -15,12 +15,6 @@ $ helmfile apply
 
 ```bash
 $ kubectl port-forward svc/mlflow-tracking 8080:80 -n mlflow
-```
-
-トラッキングサーバのアカウント確認
-
-```bash
-$ kubectl get secret --namespace mlflow mlflow-tracking -o yaml
 ```
 
 ## 学習
@@ -47,29 +41,81 @@ $ export MLFLOW_TRACKING_PASSWORD=password
 学習の実行
 
 ```bash
-$ mlflow run https://github.com/326-T/mlflow-project-sample#projects/wine-quality \
-  --experiment-name wine-quality \
-  --backend kubernetes \
-  --backend-config .kube/kubernetes_config.json \
-  -P alpha=0.5
+$ python scripts/cli.py \
+  fine-tune \
+  326takeda/mlflow-project_multilingual-e5-large:latest \
+  430758536676277373 \
+  sample-run
 ```
 
 ## KServe へのデプロイ
 
-### パラメータの修正
-
-[./kserve/inference_service.yaml](./kserve/inference_service.yaml)を修正する.
-
 ```bash
-$ cd kserve
-$ kubectl apply -f inference_service.yaml
+$ python scripts/cli.py \
+  deploy \
+  sample-inference-service \
+  430758536676277373 \
+  c3dce6c6bcc245c2b7dd37924bb958e0 \
+  multilingual-e5-large
 ```
 
 ```bash
 $ kubectl port-forward -n istio-system svc/knative-local-gateway 8081:80
 ```
 
-[./kserve/predict.http](./kserve/predict.http)で推論を行う.
+[./predict.http](./predict.http)で推論を行う.
+
+### REST v1
+
+```
+HTTP/1.1 200 OK
+content-length: 86687
+content-type: application/json
+date: Mon, 11 Nov 2024 01:30:13 GMT
+server: istio-envoy
+x-envoy-upstream-service-time: 23032
+connection: close
+
+{
+  "predictions": [
+    [0.022029250860214233,...],
+    [0.062769208473405843,...],
+    [0.069207439856743254,...],
+    [0.023856797154736583,...],
+  ]
+}
+```
+
+### REST v2
+
+```
+HTTP/1.1 200 OK
+content-length: 86877
+content-type: application/json
+date: Mon, 11 Nov 2024 01:30:53 GMT
+server: istio-envoy
+x-envoy-upstream-service-time: 21119
+connection: close
+
+{
+  "model_name": "multilingual-e5-large",
+  "model_version": null,
+  "id": "none",
+  "parameters": null,
+  "outputs": [
+    {
+      "name": "embeddings",
+      "shape": [
+        4,
+        1024
+      ],
+      "datatype": "FP32",
+      "parameters": null,
+      "data": [0.0288118626922369,...]
+    }
+  ]
+}
+```
 
 ## CRDs
 

@@ -7,6 +7,7 @@
   "editor.rulers": [120],
   "editor.tabSize": 2,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
   "[python]": {
     "editor.defaultFormatter": "ms-python.black-formatter",
     "editor.tabSize": 4,
@@ -14,10 +15,7 @@
       "source.organizeImports": "explicit"
     }
   },
-  "editor.formatOnSave": true,
-  "git.confirmSync": false,
   "github.copilot.editor.enableAutoCompletions": true,
-  "python.languageServer": "Pylance",
   "python.analysis.inlayHints.callArgumentNames": "all",
   "python.analysis.inlayHints.functionReturnTypes": true,
   "python.analysis.inlayHints.pytestParameters": true,

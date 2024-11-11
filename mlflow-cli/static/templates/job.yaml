@@ -1,8 +1,8 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: "{replaced with MLflow Project name}"
-  namespace: "{replaced with namespace}"
+  name: "{{ job_name }}"
+  namespace: "{{ namespace }}"
 spec:
   ttlSecondsAfterFinished: 100
   backoffLimit: 0
@@ -10,7 +10,7 @@ spec:
     spec:
       containers:
         - name: mlflow-project-runner
-          image: "{replaced with URI of Docker image created during Project execution}"
+          image: "{{ image }}"
           env:
             - name: MLFLOW_TRACKING_USERNAME
               valueFrom:
