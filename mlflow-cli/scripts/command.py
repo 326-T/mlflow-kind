@@ -6,7 +6,6 @@ from typing import Any
 
 import yaml
 from kubernetes import client, config
-from mlflow import tracking
 from mlflow.entities.run import Run, RunInfo
 from mlflow.environment_variables import (
     MLFLOW_EXPERIMENT_ID,
@@ -15,6 +14,7 @@ from mlflow.environment_variables import (
     _EnvironmentVariable,
 )
 from mlflow.projects.kubernetes import KubernetesSubmittedRun
+from mlflow.tracking import MlflowClient
 from mlflow.utils.mlflow_tags import (
     MLFLOW_DOCKER_IMAGE_ID,
     MLFLOW_PROJECT_BACKEND,
@@ -49,7 +49,7 @@ def fine_tune(
     """
 
     active_run: Run = (
-        tracking.MlflowClient().create_run(
+        MlflowClient().create_run(
             experiment_id=experiment_id,
             run_name=run_name,
             tags={
@@ -87,8 +87,8 @@ def fine_tune(
         {"name": MLFLOW_RUN_ID.name, "value": active_run.info.run_id},
     ]
     logging.info(f"Creating job {active_run.info.run_name} in namespace {namespace}")
-    api_instance = client.BatchV1Api()
-    api_instance.create_namespaced_job(
+    batch_v1 = client.BatchV1Api()
+    batch_v1.create_namespaced_job(
         namespace=manifest["metadata"]["namespace"],
         body=manifest,
         pretty=True,
@@ -99,6 +99,30 @@ def fine_tune(
         job_name=manifest["metadata"]["name"],
         job_namespace=manifest["metadata"]["namespace"],
     )
+
+
+def kill(
+    run_id: str,
+):
+    """
+    Delete a job on Kubernetes.
+
+    Args:
+        run_id (str): id of the run to kill.
+    """
+    batch_v1 = client.BatchV1Api()
+    core_v1 = client.CoreV1Api()
+    namespace = core_v1.list_namespace()
+    for namespace in namespace.items:
+        jobs = batch_v1.list_namespaced_job(namespace=namespace.metadata.name)
+        for job in jobs.items:
+            if job.metadata.labels["mlflow_run_id"] == run_id:
+                batch_v1.delete_namespaced_job(
+                    name=job.metadata.name,
+                    namespace=namespace.metadata.name,
+                    body=client.V1DeleteOptions(),
+                )
+    MlflowClient().set_terminated(run_id=run_id, status="KILLED")
 
 
 def deploy(
@@ -134,8 +158,8 @@ def deploy(
         if env_var["name"] == "APP_ARGS":
             env_var["value"] = f"--model_name {model_name} --predictor_protocol v2"
 
-    api_instance = client.CustomObjectsApi()
-    api_instance.create_namespaced_custom_object(
+    batch_v1 = client.CustomObjectsApi()
+    batch_v1.create_namespaced_custom_object(
         group="serving.kserve.io",
         version="v1beta1",
         namespace=namespace,
@@ -156,8 +180,8 @@ def destroy(
         name (str): name of the inference service.
         namespace (str): Kubernetes namespace to destroy the service.
     """
-    api_instance = client.CustomObjectsApi()
-    api_instance.delete_namespaced_custom_object(
+    batch_v1 = client.CustomObjectsApi()
+    batch_v1.delete_namespaced_custom_object(
         group="serving.kserve.io",
         version="v1beta1",
         namespace=namespace,

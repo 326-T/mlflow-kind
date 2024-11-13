@@ -64,6 +64,24 @@ def fine_tune(
 
 @cli.command(
     help="""
+    This command kills a job with the given parameters.
+
+    Arguments:
+        run_id    The ID of the run to kill.
+
+    Example:
+        mlflow-cli kill c3dce6c6bcc245c2b7dd37924bb958e0
+    """
+)
+@click.argument("run_id")
+def kill(
+    run_id: str,
+) -> None:
+    command.kill(run_id=run_id)
+
+
+@cli.command(
+    help="""
     This command deploys a inference service with the given parameters.
 
     Arguments:
