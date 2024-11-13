@@ -80,12 +80,17 @@ def fine_tune(
         manifest: Any = yaml.safe_load(stream=template)
     manifest["metadata"]["name"] = active_run.info.run_name
     manifest["metadata"]["namespace"] = namespace
+    manifest["metadata"]["labels"] = {
+        "mlflow-experiment-id": active_run.info.experiment_id,
+        "mlflow-run-id": active_run.info.run_id
+    }
     manifest["spec"]["template"]["spec"]["containers"][0]["image"] = image
     manifest["spec"]["template"]["spec"]["containers"][0]["env"] += [
         {"name": MLFLOW_TRACKING_URI.name, "value": KUBE_MLFLOW_TRACKING_URI.get()},
         {"name": MLFLOW_EXPERIMENT_ID.name, "value": active_run.info.experiment_id},
         {"name": MLFLOW_RUN_ID.name, "value": active_run.info.run_id},
     ]
+    print(manifest)
     logging.info(f"Creating job {active_run.info.run_name} in namespace {namespace}")
     batch_v1 = client.BatchV1Api()
     batch_v1.create_namespaced_job(
@@ -116,7 +121,7 @@ def kill(
     for namespace in namespace.items:
         jobs = batch_v1.list_namespaced_job(namespace=namespace.metadata.name)
         for job in jobs.items:
-            if job.metadata.labels["mlflow_run_id"] == run_id:
+            if "mlflow-run-id" in job.metadata.labels and job.metadata.labels["mlflow-run-id"] == run_id:
                 batch_v1.delete_namespaced_job(
                     name=job.metadata.name,
                     namespace=namespace.metadata.name,
