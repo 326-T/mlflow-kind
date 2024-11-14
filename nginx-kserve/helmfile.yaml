@@ -1,0 +1,100 @@
+repositories:
+  - name: jetstack
+    url: https://charts.jetstack.io
+  - name: metrics-server
+    url: https://kubernetes-sigs.github.io/metrics-server/
+  - name: ingress-nginx
+    url: https://kubernetes.github.io/ingress-nginx
+
+releases:
+  - name: metrics-server
+    namespace: metrics
+    createNamespace: true
+    chart: metrics-server/metrics-server
+    values:
+      - args:
+          - --kubelet-insecure-tls
+          - --kubelet-preferred-address-types=InternalIP
+
+  - name: cert-manager
+    namespace: cert-manager
+    createNamespace: true
+    chart: jetstack/cert-manager
+    version: v1.16.1
+    values:
+      - installCRDs: true
+
+  - name: ingress-nginx
+    namespace: ingress-nginx
+    createNamespace: true
+    chart: ingress-nginx/ingress-nginx
+    values:
+      - controller:
+          hostPort:
+            enabled: true
+          service:
+            type: NodePort
+
+  # https://kserve.github.io/website/master/get_started/#install-the-kserve-quickstart-environment
+  - name: kserve-crd
+    namespace: kserve
+    createNamespace: true
+    chart: oci://ghcr.io/kserve/charts/kserve-crd
+    version: v0.14.0
+
+  - name: kserve
+    needs: [cert-manager/cert-manager, kserve-crd]
+    namespace: kserve
+    chart: oci://ghcr.io/kserve/charts/kserve
+    version: v0.14.0
+    hooks:
+      - events: [postsync]
+        command: bash
+        args:
+          - -c
+          - |
+            kubectl apply -f https://github.com/kserve/kserve/releases/download/v0.13.0/kserve-cluster-resources.yaml;
+            kubectl rollout restart deployment coredns -n kube-system;
+
+  - name: mlflow
+    namespace: mlflow
+    chart: oci://registry-1.docker.io/bitnamicharts/mlflow
+    version: 2.0.3
+    values:
+      - tracking:
+          auth:
+            password: password
+          extraEnvVars:
+            - name: MLFLOW_HTTP_REQUEST_TIMEOUT
+              value: "600"
+          extraArgs:
+            - --gunicorn-opts=--timeout 600
+          resources:
+            requests:
+              ephemeral-storage: 2Gi
+            limits:
+              ephemeral-storage: 10Gi
+        minio:
+          auth:
+            rootPassword: password
+        postgresql:
+          auth:
+            password: password
+    hooks:
+      - events: [postsync]
+        command: bash
+        args:
+          - -c
+          - |
+            kubectl apply -f ./mlflow-secret.yaml;
+            kubectl rollout restart deployment coredns -n kube-system;
+
+hooks:
+  - events: [prepare]
+    # knative-serving is needed for kserve
+    command: bash
+    args:
+      - -c
+      - |
+        kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.16.0/serving-crds.yaml;
+        kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.16.0/serving-core.yaml -n knative-serving;
