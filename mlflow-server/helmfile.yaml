@@ -108,6 +108,6 @@ hooks:
       - |
         kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.16.0/serving-crds.yaml;
         kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.16.0/serving-core.yaml -n knative-serving;
-        istioctl install -y;
+        istioctl install --set profile=ambient --skip-confirmation;
         kubectl apply -f https://github.com/knative/net-istio/releases/download/knative-v1.16.0/net-istio.yaml;
         kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.16.0/serving-default-domain.yaml;
