@@ -1,12 +1,27 @@
 repositories:
   - name: jetstack
     url: https://charts.jetstack.io
+  - name: metallb
+    url: https://metallb.github.io/metallb
   - name: metrics-server
     url: https://kubernetes-sigs.github.io/metrics-server/
   - name: ingress-nginx
     url: https://kubernetes.github.io/ingress-nginx
 
 releases:
+  - name: metallb
+    namespace: metallb-system
+    createNamespace: true
+    chart: metallb/metallb
+    hooks:
+      - events: [postsync]
+        command: bash
+        args:
+          - -c
+          - |
+            kubectl apply -f ./metallb-config.yaml;
+            kubectl rollout restart deployment coredns -n kube-system;
+
   - name: metrics-server
     namespace: metrics
     createNamespace: true
@@ -28,12 +43,6 @@ releases:
     namespace: ingress-nginx
     createNamespace: true
     chart: ingress-nginx/ingress-nginx
-    values:
-      - controller:
-          hostPort:
-            enabled: true
-          service:
-            type: NodePort
 
   # https://kserve.github.io/website/master/get_started/#install-the-kserve-quickstart-environment
   - name: kserve-crd
@@ -91,10 +100,19 @@ releases:
 
 hooks:
   - events: [prepare]
+    command: bash
+    args:
+      - -c
+      - |
+        kubectl get configmap kube-proxy -n kube-system -o yaml \
+        | sed -e "s/strictARP: false/strictARP: true/" \
+        | kubectl apply -f - -n kube-system
+
+  - events: [prepare]
     # knative-serving is needed for kserve
     command: bash
     args:
       - -c
       - |
         kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.16.0/serving-crds.yaml;
-        kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.16.0/serving-core.yaml -n knative-serving;
+        kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.16.0/serving-core.yaml;

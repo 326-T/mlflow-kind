@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: second-inference-service-ingress
+  namespace: mlflow
+spec:
+  ingressClassName: "nginx"
+  rules:
+    - host: "second-inference-service-predictor-00001.mlflow.svc.cluster.local"
+      http:
+        paths:
+          - path: /v2/models/multilingual-e5-large
+            pathType: Prefix
+            backend:
+              service:
+                name: second-inference-service-predictor-00001
+                port:
+                  number: 80
