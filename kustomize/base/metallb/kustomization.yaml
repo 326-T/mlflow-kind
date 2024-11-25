@@ -4,5 +4,5 @@ namespace: metallb-system
 resources:
   - github.com/metallb/metallb/config/native?ref=v0.14.8
   - metallb-config.yaml
-patchesStrategicMerge:
-  - patch.yaml
+patches:
+  - path: patch.yaml
