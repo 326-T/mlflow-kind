@@ -2,12 +2,14 @@
   "folders": [
     { "path": "." },
     { "path": "mlflow-cli" },
-    { "path": "helmfile" }
+    { "path": "helmfile" },
+    { "path": "kustomize" }
   ],
   "settings": {
     "files.exclude": {
       "mlflow-cli": true,
-      "helmfile": true
+      "helmfile": true,
+      "kustomize": true
     }
   }
 }

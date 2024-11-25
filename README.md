@@ -4,10 +4,18 @@
 $ kind create cluster --name mlflow-poc
 ```
 
-```bash
-$ cd mlflow-server
-$ helmfile sync
-```
+- helmfile によるデプロイ
+
+  ```bash
+  $ cd helmfile
+  $ helmfile sync
+  ```
+
+- kustomize によるデプロイ
+  ```bash
+  $ cd kustomize
+  $ kustomize build base | kubectl apply -f -
+  ```
 
 ## トラッキングサーバへのアクセス
 
