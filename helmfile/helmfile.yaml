@@ -39,14 +39,13 @@ releases:
 
   # https://kserve.github.io/website/master/get_started/#install-the-kserve-quickstart-environment
   - name: kserve-crd
-    namespace: kserve
-    createNamespace: true
     chart: oci://ghcr.io/kserve/charts/kserve-crd
     version: v0.14.0
 
   - name: kserve
     needs: [cert-manager/cert-manager, kserve-crd]
     namespace: kserve
+    createNamespace: true
     chart: oci://ghcr.io/kserve/charts/kserve
     version: v0.14.0
     hooks:
