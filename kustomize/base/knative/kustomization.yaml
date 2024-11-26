@@ -3,4 +3,3 @@ kind: Kustomization
 resources:
   - serving-core.yaml
   - net-istio.yaml
-  - serving-default-domain.yaml
